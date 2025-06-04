@@ -120,11 +120,28 @@ async function processDocument(source, type, apiKey) {
       
       console.log(`Loading content from URL: ${source}`);
       try {
-        const response = await axios.get(source);
+        // Add timeout and headers to avoid blocking in serverless environment
+        const response = await axios.get(source, {
+          timeout: 15000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; RAGChatBot/1.0)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml',
+            'Accept-Language': 'en-US,en;q=0.9'
+          },
+          maxRedirects: 5
+        });
+        
         const $ = cheerio.load(response.data);
         
+        // Remove script and style elements that don't contain useful text
+        $('script, style, noscript, iframe, img, svg, canvas, video, audio').remove();
+        
         // Extract text content from the page
-        const text = $('body').text().trim();
+        const text = $('body').text().trim().replace(/\s+/g, ' ');
+        
+        if (!text || text.length < 50) {
+          throw new Error('Insufficient content extracted from URL');
+        }
         
         docs = [
           new Document({
