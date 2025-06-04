@@ -9,20 +9,23 @@ const { validateFileType, validateUrl } = require('../middleware/security');
 const router = express.Router();
 
 // Configure multer for temporary file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(os.tmpdir(), 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Sanitize filename
-    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    cb(null, `${Date.now()}-${sanitizedName}`);
-  }
-});
+// Use memory storage for Vercel environment
+const storage = process.env.NODE_ENV === 'production' 
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        const uploadDir = path.join(os.tmpdir(), 'uploads');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        // Sanitize filename
+        const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+        cb(null, `${Date.now()}-${sanitizedName}`);
+      }
+    });
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype === 'application/pdf') {
@@ -79,10 +82,7 @@ router.post('/upload-pdf',
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      const filePath = req.file.path;
       const apiKey = req.headers['x-api-key'];
-      
-      // Check if this file already exists before processing
       const originalFilename = req.file.originalname;
       const existingDocId = await checkDuplicateFile(originalFilename, apiKey);
       
@@ -97,13 +97,31 @@ router.post('/upload-pdf',
         // Record access for the existing document
         await recordDocumentAccess(existingDocId);
         
-        // Delete the uploaded file since we already have it
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+        // Clean up if using disk storage
+        if (req.file.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
         }
       } else {
-        // Process the new file
-        documentId = await processDocument(filePath, 'pdf', apiKey);
+        // Process the new file - handle both memory and disk storage
+        if (req.file.buffer) {
+          // Memory storage (Vercel production)
+          // Create a temporary file from the buffer
+          const tempDir = os.tmpdir();
+          const tempFilePath = path.join(tempDir, `${Date.now()}-${originalFilename}`);
+          
+          try {
+            // Write buffer to temp file
+            fs.writeFileSync(tempFilePath, req.file.buffer);
+            // Process the temp file
+            documentId = await processDocument(tempFilePath, 'pdf', apiKey);
+          } catch (err) {
+            console.error('Error processing buffer:', err);
+            throw err;
+          }
+        } else {
+          // Disk storage (development)
+          documentId = await processDocument(req.file.path, 'pdf', apiKey);
+        }
       }
       
       res.status(200).json({ 
@@ -115,10 +133,12 @@ router.post('/upload-pdf',
     } catch (error) {
       console.error('Error processing PDF:', error);
       // Clean up uploaded file in case of processing error
-      if (req.file && req.file.path) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting failed upload:', err);
-        });
+      if (req.file) {
+        if (req.file.path && fs.existsSync(req.file.path)) {
+          fs.unlink(req.file.path, (err) => {
+            if (err) console.error('Error deleting failed upload:', err);
+          });
+        }
       }
       res.status(500).json({ 
         error: 'Failed to process PDF',
