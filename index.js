@@ -25,6 +25,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
+      console.log(`CORS blocked request from origin: ${origin}`);
       callback(null, false);
     }
   },
@@ -32,6 +33,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
   credentials: false
 }));
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors());
 app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 
@@ -74,8 +78,13 @@ app.use((err, req, res, next) => {
 // Create necessary directories
 const ensureDirectoriesExist = async () => {
   try {
-    if (!fsSync.existsSync(UPLOAD_DIR)) {
-      await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    // Skip directory creation in production/Vercel environment
+    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+      if (!fsSync.existsSync(UPLOAD_DIR)) {
+        await fs.mkdir(UPLOAD_DIR, { recursive: true });
+      }
+    } else {
+      console.log('Running in production/Vercel environment, skipping directory creation');
     }
   } catch (err) {
     console.error('Error creating directories:', err);
@@ -85,6 +94,12 @@ const ensureDirectoriesExist = async () => {
 // Cleanup uploaded files
 const cleanupUploads = async () => {
   try {
+    // Skip file system operations in production/Vercel environment
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      console.log('Skipping file cleanup in production/Vercel environment');
+      return;
+    }
+    
     if (!fsSync.existsSync(UPLOAD_DIR)) return;
     
     const files = await fs.readdir(UPLOAD_DIR);
@@ -143,11 +158,16 @@ const initServer = async () => {
   process.on('SIGTERM', gracefulShutdown);
   process.on('SIGINT', gracefulShutdown);
   
-  // Schedule cleanup
-  setInterval(cleanupUploads, ONE_DAY_MS);
-  setInterval(cleanupVectorDb, ONE_DAY_MS);
-  cleanupUploads(); // Run initial cleanup
-  cleanupVectorDb(); // Run initial vector DB cleanup
+  // Only schedule cleanup tasks in non-serverless environments
+  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    setInterval(cleanupUploads, ONE_DAY_MS);
+    setInterval(cleanupVectorDb, ONE_DAY_MS);
+    cleanupUploads(); // Run initial cleanup
+    cleanupVectorDb(); // Run initial vector DB cleanup
+  } else {
+    console.log('Running in production/Vercel environment, skipping scheduled cleanup tasks');
+    // For Vercel, we'll rely on API endpoints to trigger cleanup when needed
+  }
 };
 
 // Start the server

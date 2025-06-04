@@ -329,7 +329,9 @@ async function deleteDocument(documentId) {
     // Use the direct approach - get all points and delete by ID
     // First, get all vector points
     const allPoints = await qdrantClient.scroll(vectorCollection, {
-      limit: 1000
+      limit: 1000,
+      with_payload: true, // Ensure we get the payload data
+      with_vectors: false // We don't need the vectors
     });
     
     // Find points matching our document ID
@@ -361,7 +363,9 @@ async function deleteDocument(documentId) {
       
       // Fallback: Get all metadata and find the one matching our document ID
       const allMetadata = await qdrantClient.scroll(metadataCollection, {
-        limit: 100
+        limit: 100,
+        with_payload: true, // Ensure we get the payload data
+        with_vectors: false // We don't need the vectors
       });
       
       // Find metadata matching our document ID
@@ -409,7 +413,9 @@ async function getUploadedFiles(apiKey) {
     try {
       // First try to get all documents without filtering
       const allResponse = await qdrantClient.scroll(metadataCollection, {
-        limit: 100
+        limit: 100,
+        with_payload: true, // Ensure we get the payload data
+        with_vectors: false // We don't need the vectors
       });
       
       // Filter client-side by API key hash

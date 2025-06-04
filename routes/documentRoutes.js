@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Configure multer for temporary file uploads
 // Use memory storage for Vercel environment
-const storage = process.env.NODE_ENV === 'production' 
+const storage = process.env.NODE_ENV === 'production' || process.env.VERCEL
   ? multer.memoryStorage()
   : multer.diskStorage({
       destination: (req, file, cb) => {
@@ -114,8 +114,25 @@ router.post('/upload-pdf',
             fs.writeFileSync(tempFilePath, req.file.buffer);
             // Process the temp file
             documentId = await processDocument(tempFilePath, 'pdf', apiKey);
+            
+            // Clean up temp file after processing
+            if (fs.existsSync(tempFilePath)) {
+              try {
+                fs.unlinkSync(tempFilePath);
+              } catch (cleanupErr) {
+                console.error('Error cleaning up temp file:', cleanupErr);
+              }
+            }
           } catch (err) {
             console.error('Error processing buffer:', err);
+            // Clean up temp file in case of error
+            if (fs.existsSync(tempFilePath)) {
+              try {
+                fs.unlinkSync(tempFilePath);
+              } catch (cleanupErr) {
+                console.error('Error cleaning up temp file after error:', cleanupErr);
+              }
+            }
             throw err;
           }
         } else {
