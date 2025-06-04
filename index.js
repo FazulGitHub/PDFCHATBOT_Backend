@@ -14,6 +14,9 @@ const PORT = process.env.PORT || 3000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
