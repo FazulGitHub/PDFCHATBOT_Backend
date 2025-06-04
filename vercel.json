@@ -1,1 +1,23 @@
-{\n  \"version\": 2,\n  \"builds\": [\n    {\n      \"src\": \"index.js\",\n      \"use\": \"@vercel/node\"\n    }\n  ],\n  \"routes\": [\n    {\n      \"src\": \"/favicon.ico\",\n      \"dest\": \"/public/favicon.ico\"\n    },\n    {\n      \"src\": \"/(.*)\",\n      \"dest\": \"/index.js\"\n    }\n  ],\n  \"env\": {\n    \"NODE_ENV\": \"production\",\n    \"VERCEL\": \"true\"\n  }\n}
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/favicon.ico",
+      "dest": "/public/favicon.ico"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "VERCEL": "true"
+  }
+}
