@@ -1,1 +1,39 @@
-{\n  \"name\": \"rag-chat-backend\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Backend for AI Chat Application\",\n  \"main\": \"index.js\",\n  \"scripts\": {\n    \"start\": \"node index.js\",\n    \"dev\": \"nodemon index.js\"\n  },\n  \"keywords\": [\n    \"rag\",\n    \"gemini\",\n    \"express\"\n  ],\n  \"author\": \"\",\n  \"license\": \"ISC\",\n  \"dependencies\": {\n    \"@google/generative-ai\": \"^0.24.1\",\n    \"@langchain/core\": \"^0.1.15\",\n    \"@langchain/google-genai\": \"^0.0.7\",\n    \"@qdrant/js-client-rest\": \"^1.7.0\",\n    \"axios\": \"^1.9.0\",\n    \"cheerio\": \"^1.0.0-rc.12\",\n    \"cors\": \"^2.8.5\",\n    \"dotenv\": \"^16.3.1\",\n    \"express\": \"^4.18.2\",\n    \"express-rate-limit\": \"^7.1.5\",\n    \"helmet\": \"^7.1.0\",\n    \"multer\": \"^1.4.5-lts.1\",\n    \"pdf-parse\": \"^1.1.1\",\n    \"uuid\": \"^9.0.1\"\n  },\n  \"devDependencies\": {\n    \"nodemon\": \"^3.0.2\"\n  },\n  \"engines\": {\n    \"node\": \"18\"\n  }\n}
+{
+  "name": "rag-chat-backend",
+  "version": "1.0.0",
+  "description": "Backend for AI Chat Application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "rag",
+    "gemini",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/core": "^0.1.15",
+    "@langchain/google-genai": "^0.0.7",
+    "@qdrant/js-client-rest": "^1.7.0",
+    "axios": "^1.9.0",
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": "18"
+  }
+}
