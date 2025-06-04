@@ -1,0 +1,9 @@
+node_modules/
+.env
+uploads/
+vector_db/
+.firebase/
+firebase-debug.log
+ui-debug.log
+.runtimeconfig.json
+*.log
