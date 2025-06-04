@@ -1,35 +1,48 @@
 # RAG Chat Backend - Vercel Deployment Guide
 
-## Environment Variables for Vercel
+## Deployment Steps
 
-Make sure to set the following environment variables in your Vercel project settings:
+1. **Set up environment variables in Vercel**:
+   - QDRANT_URL (required)
+   - QDRANT_API_KEY (required)
+   - NODE_ENV=production
+   - CORS_ORIGIN (comma-separated list of allowed origins)
+
+2. **Deploy to Vercel**:
+   ```
+   vercel
+   ```
+
+## Troubleshooting Vercel Deployment
+
+If deployment fails, check the following:
+
+1. **Multer Version**: Make sure you're using a stable version of multer (1.4.5-lts.1)
+
+2. **Serverless Function Structure**: 
+   - The `api/index.js` file should export the Express app
+   - The main `index.js` should not start the server in Vercel environment
+
+3. **Environment Variables**:
+   - Verify all required environment variables are set in Vercel dashboard
+   - Check for typos in environment variable names
+
+4. **File System Operations**:
+   - Ensure all file system operations check for Vercel environment
+   - Use memory storage for file uploads in Vercel
+   - Use temporary directories for any file operations
+
+5. **Vercel Logs**:
+   - Check deployment logs in Vercel dashboard for specific errors
+   - Use `console.log` statements to debug issues
+
+## Local Development
+
+For local development:
 
 ```
-QDRANT_URL=https://your-qdrant-instance.cloud.qdrant.io:6333
-QDRANT_API_KEY=your_qdrant_api_key
-NODE_ENV=production
-VERCEL=true
-CORS_ORIGIN=https://your-frontend-domain.com,http://localhost:4200
+npm install
+npm run dev
 ```
 
-## Deployment Considerations
-
-1. **File System Limitations**: Vercel uses a serverless architecture where file system operations are limited. The application has been modified to handle this by:
-   - Using memory storage for file uploads
-   - Creating temporary files only when needed
-   - Skipping directory creation in production
-
-2. **Scheduled Tasks**: Serverless functions don't support long-running processes. Cleanup operations are skipped in the Vercel environment.
-
-3. **CORS Configuration**: Make sure to update the `CORS_ORIGIN` environment variable with your frontend domain.
-
-4. **Qdrant Configuration**: Ensure your Qdrant instance is properly configured and accessible from Vercel's servers.
-
-## Troubleshooting
-
-If you encounter issues with the deployment:
-
-1. Check Vercel logs for any error messages
-2. Verify all environment variables are correctly set
-3. Ensure your Qdrant instance is accessible and properly configured
-4. Test API endpoints using tools like Postman to isolate frontend vs. backend issues
+Make sure to set up your `.env` file with the required environment variables.

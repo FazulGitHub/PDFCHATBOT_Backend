@@ -6,19 +6,24 @@ let qdrantClient;
 try {
   if (!process.env.QDRANT_URL) {
     console.error('QDRANT_URL environment variable is not set');
-    throw new Error('QDRANT_URL environment variable is not set');
+    // Create a dummy client for development
+    qdrantClient = createDummyClient();
+  } else {
+    qdrantClient = new QdrantClient({
+      url: process.env.QDRANT_URL,
+      apiKey: process.env.QDRANT_API_KEY,
+    });
+    
+    console.log('Qdrant client initialized with URL:', process.env.QDRANT_URL);
   }
-  
-  qdrantClient = new QdrantClient({
-    url: process.env.QDRANT_URL,
-    apiKey: process.env.QDRANT_API_KEY,
-  });
-  
-  console.log('Qdrant client initialized with URL:', process.env.QDRANT_URL);
 } catch (error) {
   console.error('Failed to initialize Qdrant client:', error);
   // Create a dummy client that logs errors instead of crashing
-  qdrantClient = {
+  qdrantClient = createDummyClient();
+}
+
+function createDummyClient() {
+  return {
     getCollections: async () => {
       console.error('Qdrant client not properly initialized');
       return { collections: [] };
@@ -95,7 +100,10 @@ async function ensureCollection(collectionName) {
     }
   } catch (error) {
     console.error('Error ensuring collection exists:', error);
-    throw error;
+    // Don't throw error in production to prevent crashes
+    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+      throw error;
+    }
   }
 }
 

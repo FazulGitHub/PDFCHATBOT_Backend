@@ -20,15 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: function(origin, callback) {
-    const allowedOrigins = (process.env.CORS_ORIGIN || '*').split(',');
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.log(`CORS blocked request from origin: ${origin}`);
-      callback(null, false);
-    }
-  },
+  origin: '*',
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
   credentials: false
@@ -36,16 +28,15 @@ app.use(cors({
 
 // Add OPTIONS handling for preflight requests
 app.options('*', cors());
+
 app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 
-// Request logging middleware (only in development)
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
-    next();
-  });
-}
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 // Import routes
 const documentRoutes = require('./routes/documentRoutes');
@@ -140,33 +131,35 @@ const initServer = async () => {
   await ensureDirectoriesExist();
   await initQdrant();
   
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-  }).on('error', (err) => {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  });
-  
-  // Graceful shutdown
-  const gracefulShutdown = () => {
-    console.log('Received shutdown signal. Closing server...');
-    server.close(() => {
-      process.exit(0);
+  // Only start the server if not in Vercel environment
+  if (!process.env.VERCEL) {
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT}`);
+    }).on('error', (err) => {
+      console.error('Failed to start server:', err);
+      process.exit(1);
     });
-  };
-  
-  process.on('SIGTERM', gracefulShutdown);
-  process.on('SIGINT', gracefulShutdown);
-  
-  // Only schedule cleanup tasks in non-serverless environments
-  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-    setInterval(cleanupUploads, ONE_DAY_MS);
-    setInterval(cleanupVectorDb, ONE_DAY_MS);
-    cleanupUploads(); // Run initial cleanup
-    cleanupVectorDb(); // Run initial vector DB cleanup
+    
+    // Graceful shutdown
+    const gracefulShutdown = () => {
+      console.log('Received shutdown signal. Closing server...');
+      server.close(() => {
+        process.exit(0);
+      });
+    };
+    
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
+    
+    // Only schedule cleanup tasks in non-serverless environments
+    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+      setInterval(cleanupUploads, ONE_DAY_MS);
+      setInterval(cleanupVectorDb, ONE_DAY_MS);
+      cleanupUploads(); // Run initial cleanup
+      cleanupVectorDb(); // Run initial vector DB cleanup
+    }
   } else {
-    console.log('Running in production/Vercel environment, skipping scheduled cleanup tasks');
-    // For Vercel, we'll rely on API endpoints to trigger cleanup when needed
+    console.log('Running in Vercel environment, skipping server start');
   }
 };
 
