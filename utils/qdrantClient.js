@@ -9,15 +9,10 @@ try {
     // Create a dummy client for development
     qdrantClient = createDummyClient();
   } else {
-    // Ensure URL has proper protocol
-    let qdrantUrl = process.env.QDRANT_URL;
-    if (!qdrantUrl.startsWith('http://') && !qdrantUrl.startsWith('https://')) {
-      qdrantUrl = 'https://' + qdrantUrl;
-      console.log('Added https:// protocol to QDRANT_URL:', qdrantUrl);
-    }
-    
+    // Create client with URL directly from environment variable
+    // The URL in .env already has https:// prefix
     qdrantClient = new QdrantClient({
-      url: qdrantUrl,
+      url: process.env.QDRANT_URL,
       apiKey: process.env.QDRANT_API_KEY,
     });
     
