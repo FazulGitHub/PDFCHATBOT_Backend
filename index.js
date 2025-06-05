@@ -19,6 +19,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Security middleware
 app.use(helmet());
+// Enable trust proxy to properly handle X-Forwarded-For headers
+app.set('trust proxy', true);
+
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],

@@ -4,7 +4,8 @@ const helmet = require('helmet');
 // Rate limiting configuration
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
+  trustProxy: true // Enable trust proxy for proper IP handling behind proxies
 });
 
 // File type validation
