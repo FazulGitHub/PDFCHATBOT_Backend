@@ -69,8 +69,9 @@ app.use((err, req, res, next) => {
 // Create necessary directories
 const ensureDirectoriesExist = async () => {
   try {
+    
     // Skip directory creation in production/Vercel environment
-    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    if (process.env.NODE_ENV !== 'production') {
       if (!fsSync.existsSync(UPLOAD_DIR)) {
         await fs.mkdir(UPLOAD_DIR, { recursive: true });
       }
@@ -86,7 +87,7 @@ const ensureDirectoriesExist = async () => {
 const cleanupUploads = async () => {
   try {
     // Skip file system operations in production/Vercel environment
-    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    if (process.env.NODE_ENV === 'production') {
       console.log('Skipping file cleanup in production/Vercel environment');
       return;
     }
@@ -132,7 +133,7 @@ const initServer = async () => {
   await initQdrant();
   
   // Only start the server if not in Vercel environment
-  if (!process.env.VERCEL) {
+  if (process.env.NODE_ENV !== 'production') {
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
     }).on('error', (err) => {
@@ -152,7 +153,7 @@ const initServer = async () => {
     process.on('SIGINT', gracefulShutdown);
     
     // Only schedule cleanup tasks in non-serverless environments
-    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    if (process.env.NODE_ENV !== 'production') {
       setInterval(cleanupUploads, ONE_DAY_MS);
       setInterval(cleanupVectorDb, ONE_DAY_MS);
       cleanupUploads(); // Run initial cleanup

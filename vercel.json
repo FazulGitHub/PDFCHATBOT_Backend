@@ -17,7 +17,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "VERCEL": "true"
+    "NODE_ENV": "production"
+    
   }
 }
