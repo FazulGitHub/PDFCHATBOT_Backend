@@ -5,7 +5,8 @@ const helmet = require('helmet');
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  trustProxy: true // Enable trust proxy for proper IP handling behind proxies
+  // Use the Express app's trust proxy setting instead of trustProxy: true
+  // This avoids the ERR_ERL_PERMISSIVE_TRUST_PROXY error
 });
 
 // File type validation

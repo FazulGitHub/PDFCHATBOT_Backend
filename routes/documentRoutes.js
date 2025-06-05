@@ -8,26 +8,20 @@ const { validateFileType, validateUrl } = require('../middleware/security');
 
 const router = express.Router();
 
-// Configure multer for temporary file uploads
-// Use memory storage for Vercel environment
-const storage = process.env.NODE_ENV === 'production' || process.env.VERCEL
-  ? multer.memoryStorage()
-  : multer.diskStorage({
-      destination: (req, file, cb) => {
-        const uploadDir = path.join(os.tmpdir(), 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-      },
-      filename: (req, file, cb) => {
-        // Sanitize filename
-        const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-        cb(null, `${Date.now()}-${sanitizedName}`);
-      }
-    });
+// Create upload directory if it doesn't exist
+const createUploadDir = () => {
+  const uploadDir = path.join(os.tmpdir(), 'uploads');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  return uploadDir;
+};
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage(); // Use memory storage for all environments for simplicity
 
 const fileFilter = (req, file, cb) => {
+  console.log('Multer fileFilter - File:', file.originalname, 'Mimetype:', file.mimetype);
   if (file.mimetype === 'application/pdf') {
     cb(null, true);
   } else {
@@ -35,23 +29,25 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+// Configure multer with memory storage
 const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 1
-  },
-  preservePath: false
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 // Error handler middleware
 const handleErrors = (err, req, res, next) => {
+  console.error('Multer error:', err);
+  
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ error: 'File size too large. Maximum size is 10MB.' });
     }
     return res.status(400).json({ error: 'File upload error: ' + err.message });
+  } else if (err) {
+    // Handle other errors that might not be instanceof MulterError
+    return res.status(400).json({ error: 'Upload error: ' + err.message });
   }
   next(err);
 };
@@ -72,7 +68,33 @@ const checkApiKey = (req, res, next) => {
 
 // Upload PDF document
 router.post('/upload-pdf', 
+  (req, res, next) => {
+    console.log('Request received:', req.headers['content-type']);
+    console.log('Request body type:', typeof req.body);
+    next();
+  },
+  (req, res, next) => {
+    // Check if the content type is correct for file uploads
+    const contentType = req.headers['content-type'] || '';
+    if (!contentType.includes('multipart/form-data')) {
+      return res.status(400).json({ 
+        error: 'Invalid content type. Expected multipart/form-data',
+        receivedContentType: contentType
+      });
+    }
+    next();
+  },
   upload.single('pdf'),
+  (req, res, next) => {
+    console.log('After multer:', req.file ? `File received: ${req.file.originalname}, size: ${req.file.size}` : 'No file');
+    if (!req.file) {
+      return res.status(400).json({ 
+        error: 'No file received',
+        headers: req.headers['content-type']
+      });
+    }
+    next();
+  },
   handleErrors,
   validateFileType,
   checkApiKey,
@@ -166,6 +188,11 @@ router.post('/upload-pdf',
 
 // Process URL content
 router.post('/process-url',
+  express.json(),
+  (req, res, next) => {
+    console.log('URL processing request body:', req.body);
+    next();
+  },
   validateUrl,
   checkApiKey,
   async (req, res) => {
